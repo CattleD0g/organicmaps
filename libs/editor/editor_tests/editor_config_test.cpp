@@ -76,6 +76,8 @@ UNIT_TEST(EditorConfig_GetTypesThatCanBeAdded)
   auto const types = config.GetTypesThatCanBeAdded();
   // A sample addable type.
   TEST(find(begin(types), end(types), "amenity-cafe") != end(types), ());
+  // A sample 3-arity type.
+  TEST(find(begin(types), end(types), "tourism-information-guidepost") != end(types), ());
   // A sample line type.
   TEST(find(begin(types), end(types), "highway-primary") == end(types), ());
   // A sample type marked as can_add="no".

@@ -416,6 +416,23 @@ UNIT_TEST(XMLFeature_AmenityRecyclingFromAndToXml)
   */
 }
 
+UNIT_TEST(XMLFeature_TourismGuidepostToXml)
+{
+  classificator::Load();
+  uint32_t const type = classif().GetTypeByPath({"tourism", "information", "guidepost"});
+  m2::PointD const mercator = mercator::FromLatLon(55.8047445, 37.5865532);
+
+  osm::EditableMapObject emo;
+  emo.SetType(type);
+  emo.SetMercator(mercator);
+
+  for (auto const & ft : {editor::ToXML(emo, true), editor::TypeToXML(type, feature::GeomType::Point, mercator)})
+  {
+    TEST_EQUAL(ft.GetTagValue("tourism"), "information", (ft));
+    TEST_EQUAL(ft.GetTagValue("information"), "guidepost", (ft));
+  }
+}
+
 UNIT_TEST(XMLFeature_Diet)
 {
   XMLFeature ft(XMLFeature::Type::Node);
