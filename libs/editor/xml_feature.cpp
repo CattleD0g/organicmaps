@@ -90,6 +90,31 @@ void ValidateElement(pugi::xml_node const & nodeOrWay)
   if (!nodeOrWay.attribute(kTimestamp))
     MYTHROW(editor::NoTimestamp, ("Node has no timestamp attribute"));
 }
+
+// Sets OSM tags for the editable 3-arity types, which can't be serialized generically as "k=v".
+bool SetComplexTypeTags(uint32_t type, XMLFeature & toFeature)
+{
+  if (ftypes::IsRecyclingCentreChecker::Instance()(type))
+  {
+    toFeature.SetTagValue("amenity", "recycling");
+    toFeature.SetTagValue("recycling_type", "centre");
+    return true;
+  }
+  if (ftypes::IsRecyclingContainerChecker::Instance()(type))
+  {
+    toFeature.SetTagValue("amenity", "recycling");
+    toFeature.SetTagValue("recycling_type", "container");
+    return true;
+  }
+  static uint32_t const kGuidepost = classif().GetTypeByPath({"tourism", "information", "guidepost"});
+  if (type == kGuidepost)
+  {
+    toFeature.SetTagValue("tourism", "information");
+    toFeature.SetTagValue("information", "guidepost");
+    return true;
+  }
+  return false;
+}
 }  // namespace
 
 XMLFeature::XMLFeature(Type const type)
@@ -731,18 +756,8 @@ XMLFeature ToXML(osm::EditableMapObject const & object, bool serializeType)
       if (ftypes::IsRecyclingTypeChecker::Instance()(type))
         continue;
 
-      if (ftypes::IsRecyclingCentreChecker::Instance()(type))
-      {
-        toFeature.SetTagValue("amenity", "recycling");
-        toFeature.SetTagValue("recycling_type", "centre");
+      if (SetComplexTypeTags(type, toFeature))
         continue;
-      }
-      if (ftypes::IsRecyclingContainerChecker::Instance()(type))
-      {
-        toFeature.SetTagValue("amenity", "recycling");
-        toFeature.SetTagValue("recycling_type", "container");
-        continue;
-      }
 
       string const strType = classif().GetReadableObjectName(type);
       strings::SimpleTokenizer iter(strType, "-");
@@ -784,17 +799,7 @@ XMLFeature TypeToXML(uint32_t type, feature::GeomType geomType, m2::PointD merca
   toFeature.SetCenter(mercator);
 
   // Set Type
-  if (ftypes::IsRecyclingCentreChecker::Instance()(type))
-  {
-    toFeature.SetTagValue("amenity", "recycling");
-    toFeature.SetTagValue("recycling_type", "centre");
-  }
-  else if (ftypes::IsRecyclingContainerChecker::Instance()(type))
-  {
-    toFeature.SetTagValue("amenity", "recycling");
-    toFeature.SetTagValue("recycling_type", "container");
-  }
-  else
+  if (!SetComplexTypeTags(type, toFeature))
   {
     string const strType = classif().GetReadableObjectName(type);
     strings::SimpleTokenizer iter(strType, "-");
